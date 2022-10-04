@@ -1,0 +1,130 @@
+﻿@inject IJSRuntime JS
+@inject AppManager _appManager
+@inherits BlazorControlBase
+
+<div class="@Class" style="margin-left:2px; background-color:white">
+    <CxButton Class="btn btn-primary m-2 p-1" Style="background-color:#336666;" ZAction="MODALCRUD_OPEN_META" ZPrm2="CREATE" >
+        <i class="fa-solid fa-plus"></i><label>Nueva Meta</label>
+    </CxButton>
+    <DyList @ref="_listMetas" TItem="Meta__Dte" ApiEndPoint="" ApiEntity="Meta" CID="METAS" ApiPQry="$order by Created desc">
+        <ItemTemplate>
+            <CxTapSelected StyleSelected="background-color: rgb(100,140,140)" Class="card col-12 my-1 p-0" Style="background-color:rgb(230,230,230);border-color:rgb(230,230,230)" CurrentId="@context.Id" SelectedId="@selecteId" ZAction="SELECTE_META" ZPrm1="@context.Id.ToString()">
+                <div class="row col-12 m-0 p-0" style="background-color:transparent;">
+                    <div class="col-9 p-0 m-0" style="font-size:0.7rem; font-weight:700; background-color:transparent">
+                        <label style="vertical-align:central; margin-left:5px;">@context.Name</label>
+                        <br />
+                        <label class="mx-2 p-0" style="vertical-align:top; margin-left:5px;font-size:0.6rem; font-weight:300">Fecha Creada: @(context.Created.Value.ToString("dd-MMM-yyyyy hh:mm tt"))</label>
+                    </div>
+                    <div class="col-3 d-flex flex-row">
+                        <CxButton Class="p-1 m-1" Style="background-color:transparent" ZAction="MODALCRUD_OPEN_META" ZPrm2="UPDATE" ZPrm1="@context.Id.ToString()">
+                            <i class="fa-solid fa-pencil"></i>
+                        </CxButton>
+                        <CxButton Class="p-1 m-1" Style="background-color:transparent" ZAction="MODALCRUD_OPEN_META" ZPrm2="DELETE" ZPrm1="@context.Id.ToString()">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </CxButton>
+                    </div>
+                </div>
+                <div class="row col-12 m-0 p-0" style="background-color:transparent; font-size:0.6rem;">
+                    <div class="col-9">
+                        Total completadas: @(context.TotalTareasCompleted) / @(context.TotalTareas)
+                    </div>
+                    <div class="col-3">
+                        @(context.PorcentajeTareasCompleted)%-@(context.TotalTareasSelected)
+                    </div>
+                </div>
+                <div class="progress mx-2" style="margin-bottom: 0.5rem;">
+                    <div class="progress-bar" role="progressbar" style="width: @(context.PorcentajeTareasCompleted)%;" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </CxTapSelected>
+        </ItemTemplate>
+    </DyList>
+    <CxDialogModalCrudSimple @ref="_modalCrud" ZActionAceptar="MODALCRUD_ACEPTAR_META" ZActionCancelar="MODALCRUD_CANCELAR_META" />
+</div>
+@code {
+    private CxDialogModalCrudSimple? _modalCrud;
+    private DyList<Meta__Dte>? _listMetas;
+    private Meta__Dte _model { get; set; } = new Meta__Dte();
+    private Meta__Dte selectedMeta { get; set; }
+    private int selecteId {
+        get {
+            if (selectedMeta == null) return 0;
+            else return selectedMeta.Id;
+        } 
+    }
+    [Parameter]
+    public string Class { get; set; } = "";
+    public override async Task<object> ActionAsync(string ZAction = "", string ZPrm1 = "", string ZPrm2 = "")
+    {
+        int countExist = 0;
+        bool validFieldName = true;
+        switch (ZAction)
+        {
+            case "SELECTE_META":
+                selectedMeta = await _appManager.SyHttpClients[""].GetAsync<Meta__Dte>("Meta", ZPrm1);
+
+                goto case "STATEHASCHANGED";
+            case "DESELECTE_META":
+                selectedMeta = null;
+                break;
+            case "MODALCRUD_OPEN_META":
+                _modalCrud.ModeOpen = ZPrm2;
+                if (_modalCrud.ModeOpen != "CREATE") await ActionAsync("SELECTE_META", ZPrm1);
+                if (_modalCrud.ModeOpen == "CREATE") await _modalCrud.Open("CREATE", "Agregar meta");
+                if (_modalCrud.ModeOpen == "DELETE") await _modalCrud.OpenForDelete("Eliminar meta", "Desea eliminar meta?", selectedMeta);
+                if (_modalCrud.ModeOpen == "UPDATE") await _modalCrud.OpenForUpdate("Editar meta", selectedMeta);
+                goto case "STATEHASCHANGED";
+            case "MODALCRUD_ACEPTAR_META":
+                Meta__Dte item = null;
+                if (_modalCrud.ModeOpen == "CREATE" || _modalCrud.ModeOpen == "UPDATE")
+                {
+                    countExist = await _appManager.SyHttpClients[""].GetCountItemsAsync("Meta", $"$where NAME = '{_modalCrud.Model.Name}'");
+                    if (countExist > 0) await JS.InvokeVoidAsync("MostrarToastr", "error", $"Ya existe una meta con el mismo nombre..({_modalCrud.Model.Name})");
+                    if (_modalCrud.Model.Name == "") {
+                        validFieldName = false;
+                        await JS.InvokeVoidAsync("MostrarToastr", "error", $"El campo nombre es requerido...");
+                    }
+                    if (_modalCrud.Model.Name.Length > 80) {
+                        validFieldName = false;
+                        await JS.InvokeVoidAsync("MostrarToastr", "error", $"El campo nombre debe tener maximo 80 caracteres...");
+                    }
+                }
+
+                if (countExist == 0 && validFieldName) {
+                    switch (_modalCrud.ModeOpen)
+                    {
+                        case "CREATE":
+                            item = new Meta__Dte() { Name = _modalCrud.Model.Name };
+                            int id = await _appManager.SyHttpClients[""].CreateAsync<Meta__Dte>("Meta", item);
+                            await mc.NotifyAsync("SELECTE_META", id.ToString());
+                            break;
+                        case "DELETE":
+                            await _appManager.SyHttpClients[""].DeleteAsync("Meta", selectedMeta.Id.ToString());
+                            await mc.NotifyAsync("DESELECTE_META");
+                            break;
+                        case "UPDATE":
+                            item = selectedMeta.MapTo<Meta__Dte>();
+                            item.Name = _modalCrud.Model.Name;
+                            await _appManager.SyHttpClients[""].PutAsync("Meta", item, item.Id);
+                            break;
+                    }
+                }
+                await _modalCrud.Close();
+                goto case "REFRESHDATA";
+            case "MODALCRUD_CANCELAR_META":
+                await _modalCrud.Close();
+                goto case "STATEHASCHANGED";
+            case "REFRESH_META":
+            case "REFRESHDATA":
+                await _listMetas.RefreshDataAsync();
+                goto case "STATEHASCHANGED";
+            case "STATEHASCHANGED":
+                await InvokeAsync(this.StateHasChanged);
+                return null;
+        }
+        return null;
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) this.SetUpMC(mc);
+    }
+}

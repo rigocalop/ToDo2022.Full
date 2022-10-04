@@ -1,0 +1,76 @@
+﻿@inject IJSRuntime JS
+@inject AppManager _appManager;
+@inherits base_Cx
+
+<ModalDialog @ref="_modalCrud" Centered=true MinHeight="100" MinWidth="400" OverlayBackgroundColor="15,40,75" OverlayOpacity="0.69" CloseOnEscapeKey="true" ShowCloseButton="false" Animate="false">
+    <Content>
+        <div class="row col-13" style="background-color:#336666; margin:-17px; border:0px solid ; border-radius: 0.1rem;">
+            <div class="col-10">
+                <label class="m-1 text-white">@Title</label>
+            </div>
+            <div class="col-1 p-1" style="margin-left:30px;">
+                <CxButton Style="color:white" ZAction=@ZActionCancelar>
+                    <i class="fa-solid fa-xmark"></i>
+                </CxButton>
+            </div>
+        </div>
+        <div class="col-13" style="background-color:transparent; margin:-17px; border:0px solid ; border-radius: 0.1rem;">
+            <div class="col-11" style="margin-top:20px; margin-left:20px;">
+                    @if (ModeOpen == "CREATE" || ModeOpen == "UPDATE")
+                    {
+                        <EditForm Model="Model" class="my-2" OnSubmit="mc.DummyOnSubmit">
+                            <XFieldInputText class="col-12" OnLabel="Nombre:" @bind-Value="@Model.Name" />
+                        </EditForm>
+                    } else if (ModeOpen == "DELETE") {
+                        <h1 style="text-align:center">¿Está seguro?</h1>
+                        <label>@Message</label>
+                    }
+            </div>
+        </div>
+    </Content>
+    <Footer>
+        <div class="row justify-content-center col-12">
+            <CxButton class="col-4 m-1 btn btn-primary" Style="background-color:#336666; color:white;" Title="Aceptar" ZAction=@ZActionAceptar/>
+            <CxButton class="col-4 m-1 btn btn-outline-dark" Title="Cancelar" ZAction=@ZActionCancelar />
+        </div>
+    </Footer>
+</ModalDialog>
+@code {
+    private ModalDialog? _modalCrud;
+    public EzItemModel? Model { get; set; }
+    public async Task Open(string modeOpen, string title, EzItemModel model = null)
+    {
+        Model = model;
+        if (model == null) Model = new EzItemModel();
+        Title = title;
+        ModeOpen = modeOpen;
+        await InvokeAsync(this.StateHasChanged);
+        await _modalCrud.Open();
+    }
+
+    public async Task OpenForDelete(string title, string message, EzItemModel model)
+    {
+        Model = model;
+        Title = title;
+        Message = message;
+        if (model != null) Message += $"({model.Name})";
+        ModeOpen = "DELETE";
+        await _modalCrud.Open();
+        await InvokeAsync(this.StateHasChanged);
+    }
+
+    public async Task OpenForUpdate(string title, EzItemModel model)
+    {
+        Model = model;
+        Title = title;
+        ModeOpen = "UPDATE";
+        await _modalCrud.Open();
+        await InvokeAsync(this.StateHasChanged);
+    }
+    
+    [Parameter] public string ZActionAceptar { get; set; } = "";
+    [Parameter] public string ZActionCancelar { get; set; } = "";
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public string ModeOpen { get; set; } = "";
+    public async Task Close() => await _modalCrud.Close();
+}

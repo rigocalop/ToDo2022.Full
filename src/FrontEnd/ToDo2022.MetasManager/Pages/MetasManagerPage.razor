@@ -1,0 +1,36 @@
+﻿@using pi8.ez.blazor.PageTemlpates
+@inject IJSRuntime JS
+@inject AppManager _appManager
+@inherits BlazorControlBase;
+<BasicPageTemplate @ref="templateForm">
+    <div class="p-0 row col-12" style="background-color:lightgray;">
+        <DisplayMetasComponent Class="col-4 p-1 mx-1"/>
+        <DisplayTareasComponent Class="col-7 p-1 mx-1"/>
+    </div>
+</BasicPageTemplate>
+@code {
+    private BasicPageTemplate? templateForm;
+    public override async Task<object> ActionAsync(string nameAction = "STATEHASCHANGED", string ZPrm1 = "", string ZPrm2 = "")
+    {
+        switch (nameAction)
+        {
+            case "STATEHASCHANGED":
+                await InvokeAsync(this.StateHasChanged);        
+                
+                return null;
+        }
+        return null;
+    }
+    #region "Metodos de Inicialización"
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        
+    }
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+        if (firstRender) this.SetUpMC(templateForm.mc);
+    }
+    #endregion
+}

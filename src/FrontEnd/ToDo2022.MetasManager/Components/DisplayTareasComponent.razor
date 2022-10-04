@@ -1,0 +1,276 @@
+﻿@inject IJSRuntime JS
+@inject AppManager _appManager;
+@inherits BlazorControlBase
+<div class="@Class" style="margin-left:2px; vertical-align:top; background-color:white">
+	<div class="px-3" style="background-color:rgb(51, 102, 102); color:white ">
+		@if (selectedMeta == null) { <div><h3>Sin datos a mostrar...</h3></div>} else {<div><h3>@selectedMeta.Name</h3></div>}
+	</div>
+	<div class="d-flex flex-row">
+		@if(selectedMeta !=null) {
+			<CxButton IsDisabled=@(selectedMeta == null) Class="btn btn-primary m-2 py-1 px-2" Style="background-color:#336666;" ZAction="MODALCRUD_OPEN_TAREA" ZPrm2="CREATE">
+				<div><i class="fa-solid fa-plus" style="margin-right:0.5rem"></i><label>Nueva tarea </label></div>
+			</CxButton>
+			@if(selectedMeta.TotalTareasSelected > 0) {
+				<CxButton Class="btn btn-primary m-2 py-1 px-2" Style="background-color:#336666;" ZAction="BYSELECTION:COMPLETE">
+					<div><i class="fa-regular fa-circle-check" style="margin-right:0.5rem"></i><label>Completar tareas</label></div>
+				</CxButton>
+				<CxButton Class="btn btn-primary m-2 py-1 px-2" Style="background-color:#336666;" ZAction="DELETE_BY_SELECTION" ZPrm2="DELETE">
+					<div><i class="fa-regular fa-trash-can" style="margin-right:0.5rem"></i><label>Eliminar tareas</label></div>
+				</CxButton>
+			}
+		}
+	</div>
+	<DyTablePagination @ref="_listTareas" TItem="Tarea__Dte" ApiEndPoint="" ApiEntity="Tarea" CID="TAREAS" IsDisabled=true PaginationLimitTake=5>
+		@****** REGION DE HEADERS*******@
+		<TableHeader>
+			<th class="col-1">
+				<CxCheck class="m-0 p-0 btn btn-light" Style="color:blue;" ZAction="BYSELECTION:SELECTEDALL" IsChecked=@(selectedMeta != null &&  selectedMeta.TotalTareasSelected == selectedMeta.TotalTareas)>
+						<ContentUnChecked><i class="fa-regular fa-square"></i></ContentUnChecked>
+						<ContentChecked><i class="fa-solid fa-square-check"></i></ContentChecked>
+				</CxCheck>
+			</th>   
+			<th class="col-1">
+				<CxCheck class="m-0 p-0 btn btn-primary px-1" Style="padding-left:1rem; background-color:#336666; color:white;" ZAction="SORTING:ISMARKED" MCsto="SORTING.ISMARKED">
+					<ContentUnChecked><i class="fa-solid fa-sort"</i></ContentUnChecked>
+					<ContentChecked><i class="fa-solid fa-sort"></i></ContentChecked>
+					<ContentIndeterminaate><i class="fa-solid fa-minus"></i></ContentIndeterminaate>
+				</CxCheck>
+			</th>   
+			<th class="col-7">
+				<div class="d-flex flex-row">
+					<CxCheck class="m-0 p-0 btn btn-primary px-1" Style="padding-left:1rem; background-color:#336666; color:white;" ZAction="SORTING:NAME" MCsto="SORTING.NAME">
+						<ContentUnChecked><i class="fa fa-sort-asc"</i></ContentUnChecked>
+						<ContentChecked><i class="fa fa-sort-desc"></i></ContentChecked>
+						<ContentIndeterminaate><i class="fa-solid fa-minus"></i></ContentIndeterminaate>
+					</CxCheck>
+					<CxTextSearch Class="form-control mx-1 py-0" Style="font-size:smaller" ZAction="REFRESHDATA" MCsto="FILTER.NAME" />
+				</div>
+			</th>
+			<th class="col-2">
+				<CxCheck class="m-0 p-0 btn btn-primary px-1" Style="padding-left:1rem; background-color:#336666; color:white;" ZAction="SORTING:CREATED" MCsto="SORTING.CREATED">
+					<ContentUnChecked><i class="fa fa-sort-asc"</i></ContentUnChecked>
+					<ContentChecked><i class="fa fa-sort-desc"></i></ContentChecked>
+					<ContentIndeterminaate><i class="fa-solid fa-minus"></i></ContentIndeterminaate>
+				</CxCheck>
+				<label>Creado</label>
+			</th>
+			<th class="col-2">
+				<CxCheck class="m-0 p-0 btn btn-primary px-1" Style="padding-left:1rem; background-color:#336666; color:white;" ZAction="SORTING:ISCOMPLETED" MCsto="SORTING.ISCOMPLETED">
+					<ContentUnChecked><i class="fa-solid fa-sort"</i></ContentUnChecked>
+					<ContentChecked><i class="fa-solid fa-sort"></i></ContentChecked>
+					<ContentIndeterminaate><i class="fa-solid fa-minus"></i></ContentIndeterminaate>
+				</CxCheck>
+				<label>Estado</label>
+			</th>
+			<th class="col-1"></th>
+		</TableHeader>
+
+		@****** REGION DE FILAS*******@
+		<ItemTemplate>
+			<td class="col-1">
+				<EditForm Model="context" Context="form" OnSubmit="@mc.DummyOnSubmit">
+					<CxInputCheck class="m-0 p-0 btn btn-light" Style="color:blue;" @bind-Value="@context.IsSelected" EzItemModel="context" ZAction="SELECTE_TAREA_ISSELECTED">
+						<ContentUnChecked><i class="fa-regular fa-square"></i></ContentUnChecked>
+						<ContentChecked><i class="fa-solid fa-square-check"></i></ContentChecked>
+					</CxInputCheck>
+				</EditForm>
+			</td>
+			<td class="col-1">
+				<EditForm Model="context" Context="form" OnSubmit="@mc.DummyOnSubmit">
+					<CxInputCheck class="m-0 p-0 btn btn-light" Style="color:rgb(243,185,20);" @bind-Value="@context.IsMarked" EzItemModel="context" ZAction="SELECTE_TAREA_ISMARKED">
+						<ContentUnChecked><i class="fa-regular fa-star"></i></ContentUnChecked>
+						<ContentChecked><i class="fa-solid fa-star"></i></ContentChecked>
+					</CxInputCheck>
+				</EditForm>
+			</td>
+			<td class="col-8 m-0 p-2"><h6>@context.Name</h6></td>
+
+			<td class="col-2 m-0 p-2"><h8>@(context.Created.Value.ToString("dd/MM/yyyyy"))</h8></td>
+			<td class="col-2">
+				<EditForm Model="context" Context="form" OnSubmit="@mc.DummyOnSubmit">
+					<CxInputCheck class="p-0 m-0 btn" Style="background-color:transparent;" @bind-Value="@context.IsCompleted" EzItemModel="context" ZAction="SELECTE_TAREA_ISCOMPLETED">
+						<ContentChecked><h8 style="color:rgb(44,109,18); font-weight:700;">Completada</h8></ContentChecked>
+						<ContentUnChecked><h8 style="color:black; font-weight:300;">Abierta</h8></ContentUnChecked>
+					</CxInputCheck>
+				</EditForm>
+			</td>
+			<td class="col-1">
+				<div class="d-flex flex-row">
+					<CxButton Class="p-0 m-0" Style="width:20px; height:20px;" ZAction="MODALCRUD_OPEN_TAREA" ZPrm2="UPDATE" ZPrm1="@context.Id.ToString()">
+						<i class="fa-solid fa-pencil"></i>
+					</CxButton>
+					<CxButton Class="p-0 m-0" Style="width:20px; height:20px;" ZAction="MODALCRUD_OPEN_TAREA" ZPrm2="DELETE" ZPrm1="@context.Id.ToString()">
+						<i class="fa-regular fa-trash-can"></i>
+					</CxButton>
+				</div>
+			</td>
+			</ItemTemplate>
+		</DyTablePagination>
+	<CxDialogModalCrudSimple @ref="_modalCrud" ZActionAceptar="MODALCRUD_ACEPTAR_TAREA" ZActionCancelar="MODALCRUD_CANCELAR_TAREA" />
+	<CxDialogModalCrudSimple @ref="_modalDeleteBySelection" ZActionAceptar="DELETE_BY_SELECTION:ACEPTAR" ZActionCancelar="DELETE_BY_SELECTION:CANCELAR" />
+</div>
+	
+@code {
+	[Parameter] public string Class { get; set; } = "";
+	private CxDialogModalCrudSimple? _modalCrud;
+	private CxDialogModalCrudSimple? _modalDeleteBySelection;
+	private Meta__Dte? selectedMeta { get; set; }
+	private Tarea__Dte? selectedTarea { get; set; }
+	private DyTablePagination<Tarea__Dte>? _listTareas;
+	public override async Task<object> ActionAsync(string ZAction = "", string ZPrm1 = "", string ZPrm2 = "")
+	{
+		int countExist = 0;
+		bool validFieldName = true;
+
+
+		switch (ZAction)
+		{
+			// SELECCION DE ELEMENTOS
+			case "BYSELECTION":
+				if (ZPrm1 == "SELECTEDALL" && selectedMeta != null && selectedMeta.TotalTareasSelected == selectedMeta.TotalTareas) ZPrm1 = "UNSELECTEDALL";
+
+				await _appManager.SyHttpClients[""].PutActionByUrl("Tarea", $"BySelection?Meta_Id={selectedMeta.Id}&mode={ZPrm1}");
+				await ActionAsync("REFRESH_META_LOCAL");
+				goto case "REFRESHDATA";
+			case "DELETE_BY_SELECTION":
+				if (ZPrm1 == "") await _modalDeleteBySelection.OpenForDelete("Eliminar tarea", "Desea eliminar tareas?", null);
+				else {
+					await _modalDeleteBySelection.Close();
+					if (ZPrm1 == "ACEPTAR") await ActionAsync("BYSELECTION", "DELETE");
+				}
+				goto case "STATEHASCHANGED";
+			case "DESELECTE_META":
+				selectedMeta = null;
+				goto case "REFRESHDATA";
+			case "SELECTE_META":
+				if (ZPrm1 != "" && ZPrm1 != "0") {
+					selectedMeta = await _appManager.SyHttpClients[""].GetAsync<Meta__Dte>("Meta", ZPrm1);
+					_listTareas.ApiPQry = $"$where Meta_Id={selectedMeta.Id} order by Created desc";
+				}
+				goto case "REFRESHDATA";
+			case "SELECTE_TAREA":
+				selectedTarea = await _appManager.SyHttpClients[""].GetAsync<Tarea__Dte>("Tarea", ZPrm1);
+				break;
+			case "SELECTE_TAREA_ISMARKED":
+				selectedTarea = (Tarea__Dte)mc.EzItemModel;
+				selectedTarea.IsMarked = !selectedTarea.IsMarked;
+				await _appManager.SyHttpClients[""].PutAsync("Tarea", selectedTarea, selectedTarea.Id);
+				goto case "STATEHASCHANGED";
+			case "SELECTE_TAREA_ISSELECTED":
+				selectedTarea = (Tarea__Dte)mc.EzItemModel;
+				selectedTarea.IsSelected = !selectedTarea.IsSelected;
+				await _appManager.SyHttpClients[""].PutAsync("Tarea", selectedTarea, selectedTarea.Id);
+				await ActionAsync("REFRESH_META_LOCAL");
+				goto case "STATEHASCHANGED";
+			case "SELECTE_TAREA_ISCOMPLETED":
+				selectedTarea = (Tarea__Dte)mc.EzItemModel;
+				selectedTarea.IsCompleted = !selectedTarea.IsCompleted;
+				await _appManager.SyHttpClients[""].PutAsync("Tarea", selectedTarea, selectedTarea.Id);
+				await ActionAsync("REFRESH_META_LOCAL");
+				goto case "STATEHASCHANGED";
+
+			// INICIA CRUD: sección principal de crud TAREA
+			case "MODALCRUD_OPEN_TAREA":
+				_modalCrud.ModeOpen = ZPrm2;
+				if (_modalCrud.ModeOpen != "CREATE") await ActionAsync("SELECTE_TAREA", ZPrm1);
+				if (_modalCrud.ModeOpen == "CREATE") await _modalCrud.Open("CREATE", "Agregar tarea");
+				if (_modalCrud.ModeOpen == "DELETE") await _modalCrud.OpenForDelete("Eliminar tarea", "Desea eliminar tarea?", selectedTarea);
+				if (_modalCrud.ModeOpen == "UPDATE") await _modalCrud.OpenForUpdate("Editar tarea", selectedTarea);
+				goto case "STATEHASCHANGED";
+			case "MODALCRUD_ACEPTAR_TAREA":
+				Tarea__Dte item = null;
+
+				if (_modalCrud.ModeOpen == "CREATE" || _modalCrud.ModeOpen == "UPDATE")
+				{
+					countExist = await _appManager.SyHttpClients[""].GetCountItemsAsync("Tarea", $"$where NAME = '{_modalCrud.Model.Name}' AND META_ID = {selectedMeta.Id}");
+					if (countExist > 0) await JS.InvokeVoidAsync("MostrarToastr", "error", $"Ya existe una tarea con el mismo nombre..({_modalCrud.Model.Name})");
+
+					if (_modalCrud.Model.Name == "")
+					{
+						validFieldName = false;
+						await JS.InvokeVoidAsync("MostrarToastr", "error", $"El campo nombre es requerido...");
+					}
+
+					if (_modalCrud.Model.Name.Length > 80)
+					{
+						validFieldName = false;
+						await JS.InvokeVoidAsync("MostrarToastr", "error", $"El campo nombre debe tener maximo 80 caracteres...");
+					}
+				}
+
+				if (countExist == 0 && validFieldName)
+				{
+					switch (_modalCrud.ModeOpen)
+					{
+						case "CREATE":
+							item = new Tarea__Dte() { Name = _modalCrud.Model.Name, Meta_Id = selectedMeta.Id };
+							await _appManager.SyHttpClients[""].CreateAsync<Tarea__Dte>("Tarea", item);
+							break;
+						case "DELETE":
+							await _appManager.SyHttpClients[""].DeleteAsync("Tarea", selectedTarea.Id.ToString());
+							break;
+						case "UPDATE":
+							item = selectedTarea.MapTo<Tarea__Dte>();
+							item.Name = _modalCrud.Model.Name;
+							await _appManager.SyHttpClients[""].UpdateAsync<Tarea__Dte>("Tarea", item, item.Id);
+							break;
+						case "CANCELAR":
+							break;
+					}
+					await ActionAsync("REFRESH_META_LOCAL");
+				}
+				await _modalCrud.Close();
+				goto case "REFRESHDATA";
+			case "MODALCRUD_CANCELAR_TAREA":
+				await _modalCrud.Close();
+				goto case "STATEHASCHANGED";
+				break;
+
+			// ACTUALIZACION DE DATOS                
+			case "REFRESH_META_LOCAL":
+				await _appManager.SyHttpClients[""].PutRefreshAsync("Meta", selectedMeta.Id);
+				selectedMeta = await _appManager.SyHttpClients[""].GetAsync<Meta__Dte>("Meta", selectedMeta.Id.ToString());
+				await mc.NotifyAsync("REFRESH_META");
+				break;
+			case "SORTING":
+				mc.STO["SORTING.ISMARKED.INDETERMINATE"] = "true";
+				mc.STO["SORTING.NAME.INDETERMINATE"] = "true";
+				mc.STO["SORTING.CREATED.INDETERMINATE"] = "true";
+				mc.STO["SORTING.ISCOMPLETED.INDETERMINATE"] = "true";
+				mc.STO[$"SORTING.{ZPrm1}.INDETERMINATE"] = "false";
+				mc.STO["SORTING"] = $"{ZPrm1}";
+				goto case "REFRESHDATA";
+
+			case "REFRESHDATA":
+				_listTareas.IsDisabled = true;
+				if (selectedMeta != null) {
+					_listTareas.IsDisabled = false;
+					string sorting = mc.STO["SORTING"];
+					string sorted = mc.STO.BoolGV($"SORTING.{sorting}", $"{sorting} ASC", $"{sorting} DESC");
+
+					string filterName = mc.STO["FILTER.NAME"];
+					if (filterName != "") filterName = $"Name like '%{filterName}%' AND";
+					_listTareas.ApiPQry = $"$where {filterName} Meta_Id={selectedMeta.Id} order by {sorted}";
+				} 
+				await _listTareas.RefreshDataAsync(1);
+				goto case "STATEHASCHANGED";
+			case "STATEHASCHANGED":
+				await InvokeAsync(this.StateHasChanged);
+				return null;
+		}
+		return null;
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender) {
+			this.SetUpMC(mc);
+			mc.STO["SORTING.NAME.INDETERMINATE"] = "true";
+			mc.STO["SORTING.CREATED.INDETERMINATE"] = "false";
+			mc.STO["SORTING.ISCOMPLETED.INDETERMINATE"] = "true";
+			mc.STO["SORTING.ISCOMPLETED.ISMARKED"] = "true";
+			mc.STO["SORTING.CREATED"] = "false";
+			mc.STO["SORTING"] = $"CREATED";
+		}
+	}
+}
